@@ -3,16 +3,7 @@
 #include <fstream>
 #include <iostream>
 
-template <typename T>
-T read_big_endian(const uint8_t* data) {
-  T result = 0;
-  for (size_t i{}; i < sizeof(T); ++i) {
-    result = (result << 8) | data[i];
-  }
-  return result;
-}
-
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   // Flush after every std::cout / std::cerr
   std::cout << std::unitbuf;
   std::cerr << std::unitbuf;
@@ -38,10 +29,10 @@ int main(int argc, char* argv[]) {
 
     std::array<uint8_t, 2> buf{};
     db.seekg(16);
-    db.read(reinterpret_cast<char*>(buf.data()), 2);
+    db.read(reinterpret_cast<char *>(buf.data()), 2);
 
-    auto page_size = read_big_endian<uint16_t>(&buf[0]);
-    auto page_count = read_big_endian<uint32_t>(&buf[28]);
+    unsigned short page_size = (static_cast<unsigned char>(buf[1]) |
+                                (static_cast<unsigned char>(buf[0]) << 8));
 
     std::cout << "database page size: " << page_size << std::endl;
   }
