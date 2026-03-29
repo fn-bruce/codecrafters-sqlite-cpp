@@ -5,7 +5,7 @@
 
 template <typename T>
 T read_big_endian(const uint8_t* data) {
-  T result = 0;
+  T result{};
   for (size_t i{}; i < sizeof(T); ++i) {
     result = (result << 8) | data[i];
   }
@@ -40,9 +40,15 @@ int main(int argc, char* argv[]) {
     db.seekg(16);
     db.read(reinterpret_cast<char*>(buf.data()), 2);
 
-    auto page_size = read_big_endian<uint16_t>(&buf[0]);
+    auto page_size{read_big_endian<uint16_t>(&buf[0])};
+
+    db.seekg(103);
+    db.read(reinterpret_cast<char*>(buf.data()), 2);
+
+    auto table_count{read_big_endian<uint16_t>(&buf[0])};
 
     std::cout << "database page size: " << page_size << std::endl;
+    std::cout << "number of tables: " << table_count << std::endl;
   }
 
   return 0;
