@@ -39,17 +39,6 @@ std::pair<uint64_t, int> read_varint(std::ifstream& db) {
   return {result, bytes_read};
 }
 
-std::string get_header_string(std::istream& db) {
-  std::array<uint8_t, 16> buf{};
-  db.seekg(0);
-  db.read(reinterpret_cast<char*>(buf.data()), 16);
-  std::stringstream ss{};
-  for (const auto& b : buf) {
-    ss << b;
-  }
-  return ss.str();
-}
-
 unsigned short get_page_size(std::ifstream& db) {
   std::array<uint8_t, 2> buf{};
   db.seekg(PAGE_SIZE_OFFSET);
@@ -128,7 +117,6 @@ int main(int argc, char* argv[]) {
       return 1;
     }
 
-    auto header_string{get_header_string(db)};
     auto page_size{get_page_size(db)};
     auto table_count{get_table_count(db)};
     auto table_names{get_table_names(db, table_count)};
