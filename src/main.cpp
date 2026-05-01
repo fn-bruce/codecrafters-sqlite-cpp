@@ -142,10 +142,13 @@ int main(int argc, char* argv[]) {
 
     auto page_size{get_page_size(db)};
     auto table_count{get_table_count(db)};
-    auto table_names{get_table_names(db, table_count)};
 
-    std::cout << "database page size: " << page_size << '\n';
     std::cout << "number of tables: " << table_count << '\n';
+    std::cout << "database page size: " << page_size << '\n';
+  } else if (command == ".tables") {
+    std::ifstream db(database_file_path, std::ios::binary);
+    auto table_count{get_table_count(db)};
+    auto table_names{get_table_names(db, table_count)};
     for (size_t i{}; i < table_names.size(); ++i) {
       std::cout << table_names[i];
       if (i + 1 < table_names.size()) std::cout << ' ';
