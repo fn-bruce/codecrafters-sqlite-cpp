@@ -1,7 +1,9 @@
 #include <array>
 #include <cstring>
 #include <fstream>
+#include <ios>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -59,39 +61,60 @@ std::vector<std::string> get_table_names(std::ifstream& db,
   names.reserve(table_count);
 
   for (int i{}; i < table_count; ++i) {
-    // each cell pointer is a 2-byte offset from the page start
-    int offset{CELL_POINTER_OFFSET + (CELL_PTR_SIZE * i)};
-    db.seekg(offset);
+    // get offset
     std::array<uint8_t, 2> offset_buf{};
+    db.seekg(CELL_POINTER_OFFSET + (CELL_PTR_SIZE * i));
     db.read(reinterpret_cast<char*>(offset_buf.data()), 2);
-    auto cell_ptr_offset{read_big_endian<uint16_t>(&offset_buf[0])};
-
-    // cell layout: [payload_size varint] [rowid varint] [record]
-    db.seekg(cell_ptr_offset);
-    auto [payload_size, ps_len]{read_varint(db)};
-    auto [rowid, rowid_len]{read_varint(db)};
-
-    // record header: [header_size varint] [serial_types...]
-    auto [header_size, hs_len]{read_varint(db)};
-    std::vector<uint64_t> serial_types{};
-    int header_bytes_read{hs_len};
-    while (header_bytes_read < header_size) {
-      auto [serial_type, st_len] = read_varint(db);
-      serial_types.push_back(serial_type);
-      header_bytes_read += st_len;
+    uint16_t offset{};
+    for (const auto& b : offset_buf) {
+      offset = (offset << 8) | b;
     }
 
-    // sqlite_schema columns: type, name, tbl_name, rootpage, sql
-    int type_len = (serial_types[0] - 13) / 2;
-    db.seekg(type_len, std::ios::cur);  // skip type
+    // go to offset
+    db.seekg(offset);
 
-    int name_len = (serial_types[1] - 13) / 2;
-    std::string name(name_len, '\0');
-    db.read(name.data(), name_len);
+    // size of record
+    uint8_t record_size{};
+    db.read(reinterpret_cast<char*>(&record_size), 1);
 
-    if (name != "sqlite_sequence") {
-      names.push_back(name);
+    // get rowid
+    uint8_t row_id{};
+    db.read(reinterpret_cast<char*>(&row_id), 1);
+
+    // get record header size
+    uint8_t record_header_size{};
+    db.read(reinterpret_cast<char*>(&record_header_size), 1);
+
+    // get serial types
+    std::vector<int> serial_type_codes{};
+    serial_type_codes.reserve(static_cast<size_t>(record_header_size - 1));
+
+    size_t record_count{1};
+    while (record_count < static_cast<size_t>(record_header_size)) {
+      auto [result, bytes_read] = read_varint(db);
+      record_count += bytes_read;
+      serial_type_codes.push_back(result);
     }
+
+    // skip type field
+    size_t type_size = (serial_type_codes[0] - 13) / 2;
+    db.seekg(type_size, std::ios::cur);
+
+    // read name cell
+    size_t name_size = (serial_type_codes[1] - 13) / 2;
+    std::string name{};
+    name.reserve(name_size);
+    for (size_t i{}; i < name_size; ++i) {
+      char c{};
+      db.read(&c, 1);
+      name += c;
+    }
+
+    if (name == "sqlite_sequence") {
+      continue;
+    }
+
+    names.push_back(name);
   }
 
   return names;
