@@ -1,5 +1,6 @@
 #include <array>
 #include <cstring>
+#include <format>
 #include <fstream>
 #include <ios>
 #include <iostream>
@@ -188,19 +189,16 @@ int get_row_count(std::ifstream& db, std::string table_name) {
     db.read(reinterpret_cast<char*>(&rootpage), 1);
 
     // navigate to rootpage
-    size_t page_offset {(page_size * static_cast<size_t>(rootpage))};
-
-    std::cout << "name: " << name << '\n';
-    std::cout << "page_size: " << page_size << '\n';
-    std::cout << "rootpage: " << +rootpage << '\n';
-    std::cout << "page_offset: " << page_offset << '\n';
+    size_t header_offset{static_cast<size_t>(rootpage - 1 == 0 ? 100 : 8)};
+    size_t page_offset{(page_size * static_cast<size_t>(rootpage - 1)) +
+                       header_offset};
 
     db.seekg(page_offset);
     while (true) {
-      char curr_byte{};
-      db.read(&curr_byte, 1);
-      std::cout << "curr_byte: " << +curr_byte << '\n';
-      if (!curr_byte) {
+      std::array<char, 2> curr_bytes{};
+      db.read(reinterpret_cast<char*>(curr_bytes.data()), 2);
+      // std::cout << "curr_byte: " << std::format("{:#x}", curr_byte) << '\n';
+      if (!curr_bytes[0] && !curr_bytes[1]) {
         break;
       }
       ++count;
