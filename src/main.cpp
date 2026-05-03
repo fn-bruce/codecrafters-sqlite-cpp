@@ -3,8 +3,7 @@
 #include <fstream>
 #include <ios>
 #include <iostream>
-#include <memory>
-#include <sstream>
+#include <ranges>
 #include <string>
 #include <vector>
 
@@ -120,6 +119,92 @@ std::vector<std::string> get_table_names(std::ifstream& db,
   return names;
 }
 
+int get_row_count(std::ifstream& db, std::string table_name) {
+  auto page_size{get_page_size(db)};
+  auto table_count{get_table_count(db)};
+
+  int count{};
+  for (int i{}; i < table_count; ++i) {
+    // get offset
+    std::array<uint8_t, 2> offset_buf{};
+    db.seekg(CELL_POINTER_OFFSET + (CELL_PTR_SIZE * i));
+    db.read(reinterpret_cast<char*>(offset_buf.data()), 2);
+    uint16_t offset{};
+    for (const auto& b : offset_buf) {
+      offset = (offset << 8) | b;
+    }
+
+    // go to offset
+    db.seekg(offset);
+
+    // size of record
+    uint8_t record_size{};
+    db.read(reinterpret_cast<char*>(&record_size), 1);
+
+    // get rowid
+    uint8_t row_id{};
+    db.read(reinterpret_cast<char*>(&row_id), 1);
+
+    // get record header size
+    uint8_t record_header_size{};
+    db.read(reinterpret_cast<char*>(&record_header_size), 1);
+
+    // get serial types
+    std::vector<int> serial_type_codes{};
+    serial_type_codes.reserve(static_cast<size_t>(record_header_size - 1));
+
+    size_t record_count{1};
+    while (record_count < static_cast<size_t>(record_header_size)) {
+      auto [result, bytes_read] = read_varint(db);
+      record_count += bytes_read;
+      serial_type_codes.push_back(result);
+    }
+
+    // skip type field
+    size_t type_size = (serial_type_codes[0] - 13) / 2;
+    db.seekg(type_size, std::ios::cur);
+
+    // read name cell
+    size_t name_size = (serial_type_codes[1] - 13) / 2;
+    std::string name{};
+    name.reserve(name_size);
+    for (size_t i{}; i < name_size; ++i) {
+      char c{};
+      db.read(&c, 1);
+      name += c;
+    }
+
+    if (name != table_name) {
+      continue;
+    }
+
+    // skip table name cell
+    size_t table_name_size = (serial_type_codes[2] - 13) / 2;
+    db.seekg(table_name_size, std::ios::cur);
+
+    // get rootpage
+    size_t rootpage_size{static_cast<size_t>(serial_type_codes[3])};
+    uint8_t rootpage{};
+    db.read(reinterpret_cast<char*>(&rootpage), 1);
+
+    // navigate to rootpage
+    size_t page_offset {(page_size * static_cast<size_t>(rootpage)) + 8};
+    db.seekg(page_offset);
+    while (true) {
+      char curr_byte{};
+      db.read(&curr_byte, 1);
+      if (!curr_byte) {
+        break;
+      }
+      ++count;
+    }
+
+    break;
+  }
+
+  return count;
+}
+
 int main(int argc, char* argv[]) {
   // Flush after every std::cout / std::cerr
   std::cout << std::unitbuf;
@@ -154,6 +239,13 @@ int main(int argc, char* argv[]) {
       if (i + 1 < table_names.size()) std::cout << ' ';
     }
     std::cout << '\n';
+  } else {
+    std::ifstream db(database_file_path, std::ios::binary);
+    auto parts{command | std::views::split(' ') |
+               std::ranges::to<std::vector<std::string>>()};
+    auto table_name{parts.back()};
+    auto row_count{get_row_count(db, table_name)};
+    std::cout << row_count << '\n';
   }
 
   return 0;
