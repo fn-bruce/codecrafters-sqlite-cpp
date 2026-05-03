@@ -199,6 +199,8 @@ int get_row_count(std::ifstream& db, std::string table_name) {
       ++count;
     }
 
+    std::cout << "name: " << name << '\n';
+
     break;
   }
 
