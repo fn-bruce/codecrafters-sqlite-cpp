@@ -198,6 +198,7 @@ int get_row_count(std::ifstream& db, std::string table_name) {
     while (true) {
       char curr_byte{};
       db.read(&curr_byte, 1);
+      std::cout << "curr_byte: " << +curr_byte << '\n';
       if (!curr_byte) {
         break;
       }
