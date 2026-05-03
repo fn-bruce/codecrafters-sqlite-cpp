@@ -188,7 +188,7 @@ int get_row_count(std::ifstream& db, std::string table_name) {
     db.read(reinterpret_cast<char*>(&rootpage), 1);
 
     // navigate to rootpage
-    size_t page_offset {(page_size * static_cast<size_t>(rootpage)) + 8};
+    size_t page_offset {(page_size * static_cast<size_t>(rootpage))};
 
     std::cout << "name: " << name << '\n';
     std::cout << "page_size: " << page_size << '\n';
