@@ -193,6 +193,7 @@ int get_row_count(std::ifstream& db, std::string table_name) {
     std::cout << "name: " << name << '\n';
     std::cout << "page_size: " << page_size << '\n';
     std::cout << "rootpage: " << +rootpage << '\n';
+    std::cout << "page_offset: " << page_offset << '\n';
 
     db.seekg(page_offset);
     while (true) {
