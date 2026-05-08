@@ -1,0 +1,13 @@
+#ifndef INCLUDE_SRC_TOKEN_TYPE_HPP_
+#define INCLUDE_SRC_TOKEN_TYPE_HPP_
+
+enum class TokenType {
+  SELECT,
+  COUNT_ALL,
+  FROM,
+  IDENTIFIER,
+  SEMICOLON,
+  END,
+};
+
+#endif  // INCLUDE_SRC_TOKEN_TYPE_HPP_

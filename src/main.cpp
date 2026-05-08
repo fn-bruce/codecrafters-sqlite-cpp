@@ -1,12 +1,13 @@
 #include <array>
 #include <cstring>
-#include <format>
 #include <fstream>
 #include <ios>
 #include <iostream>
-#include <ranges>
 #include <string>
 #include <vector>
+
+#include "parser.hpp"
+#include "tokenizer.hpp"
 
 constexpr int DATABASE_HEADER_SIZE{100};
 constexpr int PAGE_HEADER_SIZE{8};
@@ -246,9 +247,11 @@ int main(int argc, char* argv[]) {
     std::cout << '\n';
   } else {
     std::ifstream db(database_file_path, std::ios::binary);
-    auto parts{command | std::views::split(' ') |
-               std::ranges::to<std::vector<std::string>>()};
-    auto table_name{parts.back()};
+    auto tokenizer{Tokenizer{command}};
+    auto tokens{tokenizer.tokenize()};
+    auto parser{Parser{tokens}};
+    auto stmt{parser.parse()};
+    auto table_name{stmt.name};
     auto row_count{get_row_count(db, table_name)};
     std::cout << row_count << '\n';
   }
