@@ -247,17 +247,16 @@ int get_col_row(std::ifstream& db, std::string col_name,
     db.read(reinterpret_cast<char*>(&row_id), 1);
 
     // get record header size
-    uint8_t record_header_size{};
-    db.read(reinterpret_cast<char*>(&record_header_size), 1);
+    auto [record_header_size, rhs_bytes] = read_varint(db);
 
     // get serial types
     std::vector<int> serial_type_codes{};
     serial_type_codes.reserve(static_cast<size_t>(record_header_size - 1));
 
-    size_t record_count{1};
-    while (record_count < static_cast<size_t>(record_header_size)) {
+    size_t header_bytes_read{static_cast<size_t>(rhs_bytes)};
+    while (header_bytes_read < record_header_size) {
       auto [result, bytes_read] = read_varint(db);
-      record_count += bytes_read;
+      header_bytes_read += bytes_read;
       serial_type_codes.push_back(result);
     }
 
@@ -380,7 +379,7 @@ int get_col_row(std::ifstream& db, std::string col_name,
       }
 
       size_t stc_i{};
-      for (const auto &[k, v] : create_stmt.cols) {
+      for (const auto& [k, v] : create_stmt.cols) {
         const auto& stc{serial_type_codes[stc_i++]};
         std::string col_val{};
         if (stc == 0) {
