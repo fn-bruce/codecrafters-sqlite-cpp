@@ -3,9 +3,20 @@
 
 enum class TokenType {
   SELECT,
+  CREATE,
+  TABLE,
   COUNT_ALL,
   FROM,
+  COL_NAME,
+  COL_TYPE,
+  PRIMARY_KEY,
+  AUTOINCREMENT,
   IDENTIFIER,
+  INTEGER,
+  TEXT,
+  LPAREN,
+  RPAREN,
+  COMMA,
   SEMICOLON,
   END,
 };

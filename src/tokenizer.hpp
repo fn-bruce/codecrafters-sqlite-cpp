@@ -16,32 +16,49 @@ class Tokenizer {
     while (!is_end()) {
       assert(curr().has_value());
       char c{curr().value()};
-      switch (c) {
-        case 'S':
-          select();
-          break;
-        case 'C':
-          count_all();
-          break;
-        case 'F':
-          from();
-          break;
-        case ';':
-          tokens_.push_back({
-              .name = std::string{c},
-              .type = TokenType::SEMICOLON,
-          });
-          advance();
-          break;
-        case ' ':
-          ++pos_;
-          break;
-        default: {
-          if (std::isalpha(c)) {
-            identifier();
+      if (is_next("autoincrement")) {
+        autoincrement();
+      } else if (is_next("COUNT(*)")) {
+        count_all();
+      } else if (is_next("CREATE")) {
+        create();
+      } else if (is_next("FROM")) {
+        from();
+      } else if (is_next("integer")) {
+        integer();
+      } else if (is_next("primary key")) {
+        primary_key();
+      } else if (is_next("SELECT")) {
+        select();
+      } else if (is_next("text")) {
+        text();
+      } else if (is_next("TABLE")) {
+        table();
+      } else {
+        switch (c) {
+          case ',':
+            comma();
             break;
+          case '(':
+            lparen();
+            break;
+          case ')':
+            rparen();
+            break;
+          case '\n':
+          case '\r':
+          case '\t':
+          case ' ':
+            ++pos_;
+            break;
+          default: {
+            if (std::isalpha(c)) {
+              identifier();
+              break;
+            }
+            std::cout << c << '\n';
+            throw std::runtime_error("issue tokenizing");
           }
-          throw std::runtime_error("issue tokenizing");
         }
       }
     }
@@ -55,6 +72,15 @@ class Tokenizer {
   Tokens tokens_{};
   const std::string query_{};
   size_t pos_{};
+
+  bool is_next(std::string_view next) {
+    if (pos_ + next.size() >= query_.size()) {
+      return false;
+    }
+
+    auto sub_str{query_.substr(pos_, next.size())};
+    return next == sub_str;
+  }
 
   bool is_end() const { return pos_ >= query_.size(); }
 
@@ -74,54 +100,62 @@ class Tokenizer {
     return {};
   }
 
-  void select() {
-    if (pos_ + 6 >= query_.size()) {
+  void keyword(std::string_view keyword, TokenType type) {
+    if (pos_ + keyword.size() >= query_.size()) {
       throw std::runtime_error("error tokenizing select");
     }
 
-    std::string sub_str{query_.substr(pos_, 6)};
-    if (sub_str != "SELECT") {
+    std::string sub_str{query_.substr(pos_, keyword.size())};
+    if (sub_str != keyword) {
       throw std::runtime_error("error tokenizing select");
     }
 
-    pos_ += 6;
+    pos_ += keyword.size();
     tokens_.push_back({
         .name = sub_str,
-        .type = TokenType::SELECT,
+        .type = type,
     });
   }
 
-  void from() {
-    if (pos_ + 4 >= query_.size()) {
-      throw std::runtime_error("error tokenizing select");
-    }
+  void text() { keyword("text", TokenType::TEXT); }
 
-    std::string sub_str{query_.substr(pos_, 4)};
-    if (sub_str != "FROM") {
-      throw std::runtime_error("error tokenizing select");
-    }
+  void autoincrement() { keyword("autoincrement", TokenType::AUTOINCREMENT); }
 
-    pos_ += 4;
+  void primary_key() { keyword("primary key", TokenType::PRIMARY_KEY); }
+
+  void integer() { keyword("integer", TokenType::INTEGER); }
+
+  void table() { keyword("TABLE", TokenType::TABLE); }
+
+  void select() { keyword("SELECT", TokenType::SELECT); }
+
+  void from() { keyword("FROM", TokenType::FROM); }
+
+  void create() { keyword("CREATE", TokenType::CREATE); }
+
+  void count_all() { keyword("COUNT(*)", TokenType::COUNT_ALL); }
+
+  void lparen() {
+    ++pos_;
     tokens_.push_back({
-        .name = sub_str,
-        .type = TokenType::FROM,
+        .name = "(",
+        .type = TokenType::LPAREN,
     });
   }
 
-  void count_all() {
-    if (pos_ + 8 >= query_.size()) {
-      throw std::runtime_error("error tokenizing select");
-    }
-
-    std::string sub_str{query_.substr(pos_, 8)};
-    if (sub_str != "COUNT(*)") {
-      throw std::runtime_error("error tokenizing select");
-    }
-
-    pos_ += 8;
+  void rparen() {
+    ++pos_;
     tokens_.push_back({
-        .name = sub_str,
-        .type = TokenType::COUNT_ALL,
+        .name = ")",
+        .type = TokenType::RPAREN,
+    });
+  }
+
+  void comma() {
+    ++pos_;
+    tokens_.push_back({
+        .name = ",",
+        .type = TokenType::COMMA,
     });
   }
 

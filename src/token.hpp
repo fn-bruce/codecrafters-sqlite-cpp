@@ -12,9 +12,7 @@ using Tokens = std::vector<Token>;
 
 struct Token {
   std::string name;
-	TokenType type;
+  TokenType type;
 };
-
-
 
 #endif  // INCLUDE_SRC_TOKEN_HPP_
