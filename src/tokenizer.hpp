@@ -22,13 +22,13 @@ class Tokenizer {
         count_all();
       } else if (is_next("CREATE")) {
         create();
-      } else if (is_next("FROM")) {
+      } else if (is_next("FROM") || is_next("from")) {
         from();
       } else if (is_next("integer")) {
         integer();
       } else if (is_next("primary key")) {
         primary_key();
-      } else if (is_next("SELECT")) {
+      } else if (is_next("SELECT") || is_next("select")) {
         select();
       } else if (is_next("text")) {
         text();
