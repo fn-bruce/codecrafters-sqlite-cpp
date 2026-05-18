@@ -106,24 +106,25 @@ class Tokenizer {
     }
 
     std::string sub_str{query_.substr(pos_, keyword.size())};
-    if (sub_str != keyword) {
+    std::string upper{to_upper(sub_str)};
+    if (upper != keyword) {
       throw std::runtime_error("error tokenizing select");
     }
 
     pos_ += keyword.size();
     tokens_.push_back({
-        .name = sub_str,
+        .name = upper,
         .type = type,
     });
   }
 
-  void text() { keyword("text", TokenType::TEXT); }
+  void text() { keyword("TEXT", TokenType::TEXT); }
 
-  void autoincrement() { keyword("autoincrement", TokenType::AUTOINCREMENT); }
+  void autoincrement() { keyword("AUTOINCREMENT", TokenType::AUTOINCREMENT); }
 
-  void primary_key() { keyword("primary key", TokenType::PRIMARY_KEY); }
+  void primary_key() { keyword("PRIMARY KEY", TokenType::PRIMARY_KEY); }
 
-  void integer() { keyword("integer", TokenType::INTEGER); }
+  void integer() { keyword("INTEGER", TokenType::INTEGER); }
 
   void table() { keyword("TABLE", TokenType::TABLE); }
 
@@ -170,6 +171,12 @@ class Tokenizer {
         .name = identifier,
         .type = TokenType::IDENTIFIER,
     });
+  }
+
+  std::string to_upper(std::string s) {
+    std::transform(s.begin(), s.end(), s.begin(),
+                   [](unsigned char c) { return std::toupper(c); });
+    return s;
   }
 };
 
