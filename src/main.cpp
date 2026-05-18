@@ -380,6 +380,9 @@ int get_col_row(std::ifstream& db, std::string col_name,
 
       size_t stc_i{};
       for (const auto& [k, v] : create_stmt.cols) {
+        if (stc_i >= serial_type_codes.size()) {
+          continue;
+        }
         const auto& stc{serial_type_codes[stc_i++]};
         std::string col_val{};
         if (stc == 0) {
