@@ -24,7 +24,7 @@ class Tables : public std::vector<Table> {
 
     constexpr size_t NAME_IDX{1};
     constexpr size_t ROOT_PAGE_IDX{3};
-    constexpr std::string SQLITE_SEQ_TBL_NAME{"sqlite_sequence"};
+    std::string_view SQLITE_SEQ_TBL_NAME{"sqlite_sequence"};
     auto schema_page{db.schema_page()};
     for (const auto& schema_page_cell : schema_page.cells()) {
       const auto& schema_page_record{schema_page_cell.record()};
