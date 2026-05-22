@@ -22,14 +22,8 @@ int main(int argc, char* argv[]) {
   std::string database_file_path = argv[1];
   std::string command = argv[2];
 
-  Database database{database_file_path};
-
-  auto tables_result{Tables::create(database)};
-  if (!tables_result) {
-    throw std::runtime_error("error creating tables");
-  }
-
-  auto tables{tables_result.value()};
+  const Database database{database_file_path};
+  const Tables& tables{database.tables()};
 
   if (command == ".dbinfo") {
     std::cout << "number of tables: " << database.table_count() << '\n';
