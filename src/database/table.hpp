@@ -20,15 +20,13 @@ class Table {
     };
   }
 
-	std::string_view tbl_name() const { return tbl_name_; }
+  std::string_view tbl_name() const { return tbl_name_; }
 
-  void print() const {
-    rows_.print();
-  }
+  size_t row_count() const { return rows_.size(); }
 
-  void print(std::string_view col_name) const {
-    rows_.print(col_name);
-  }
+  void print() const { rows_.print(); }
+
+  void print(std::string_view col_name) const { rows_.print(col_name); }
 
   private:
   Table(std::string_view tbl_name, const std::vector<std::string>& col_names,
