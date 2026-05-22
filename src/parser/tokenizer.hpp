@@ -18,7 +18,7 @@ class Tokenizer {
       char c{curr().value()};
       if (is_next("autoincrement")) {
         autoincrement();
-      } else if (is_next("COUNT(*)")) {
+      } else if (is_next("COUNT(*)") || is_next("count(*)")) {
         count_all();
       } else if (is_next("CREATE")) {
         create();
