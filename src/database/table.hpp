@@ -28,6 +28,10 @@ class Table {
 
   void print(std::string_view col_name) const { rows_.print(col_name); }
 
+  void print(const std::vector<std::string>& col_names) const {
+    rows_.print(col_names);
+  }
+
   private:
   Table(std::string_view tbl_name, const std::vector<std::string>& col_names,
         const std::vector<std::vector<std::string>>& row_vals)

@@ -48,6 +48,12 @@ class Rows final : public std::vector<Row> {
       r.print(col_name);
     }
   }
+
+  void print(const std::vector<std::string>& col_names) const {
+    for (const auto& r : *this) {
+      r.print(col_names);
+    }
+  }
 };
 
 #endif // INCLUDE_DATABASE_ROWS_HPP_

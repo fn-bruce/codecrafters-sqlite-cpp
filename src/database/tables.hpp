@@ -44,6 +44,15 @@ class Tables : public std::vector<Table> {
       }
     }
   }
+
+  void print(std::string_view tbl_name, const std::vector<std::string>& col_names) const {
+    for (const auto& t : *this) {
+      if (t.tbl_name() == tbl_name) {
+        t.print(col_names);
+        break;
+      }
+    }
+  }
 };
 
 #endif // INCLUDE_DATABASE_TABLES_HPP_

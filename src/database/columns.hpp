@@ -1,6 +1,7 @@
 #ifndef INCLUDE_DATABASE_COLUMNS_HPP_
 #define INCLUDE_DATABASE_COLUMNS_HPP_
 
+#include <algorithm>
 #include <expected>
 #include <iostream>
 #include <variant>
@@ -68,6 +69,28 @@ class Columns final : public std::vector<Column> {
         std::cout << std::get<uint64_t>(c.value());
       }
     }
+    std::cout << '\n';
+  }
+
+  void print(const std::vector<std::string>& col_names) const {
+    size_t count{};
+    for (const auto& cn : col_names) {
+      auto it{std::find_if(begin(), end(),
+                           [&cn](const Column& c) { return cn == c.key(); })};
+      if (it == end()) {
+        continue;
+      }
+
+      if (std::holds_alternative<std::string>(it->value())) {
+        std::cout << std::get<std::string>(it->value());
+      } else if (std::holds_alternative<uint64_t>(it->value())) {
+        std::cout << std::get<uint64_t>(it->value());
+      }
+
+      if (++count < col_names.size()) {
+        std::cout << "|";
+      }
+    };
     std::cout << '\n';
   }
 };
