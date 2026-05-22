@@ -49,16 +49,12 @@ int main(int argc, char* argv[]) {
       auto table_name{select_all_stmt.name};
       auto row_count{tables.row_count(table_name)};
       std::cout << row_count << '\n';
-    } else if (std::holds_alternative<SelectColStmt>(stmt)) {
-      auto select_col_stmt{std::get<SelectColStmt>(stmt)};
-      auto col_name{select_col_stmt.col_name};
-      auto table_name{select_col_stmt.table_name};
-      tables.print(table_name, col_name);
     } else if (std::holds_alternative<SelectColsStmt>(stmt)) {
       auto select_cols_stmt{std::get<SelectColsStmt>(stmt)};
       auto col_names{select_cols_stmt.col_names};
       auto table_name{select_cols_stmt.table_name};
-      tables.print(table_name, col_names);
+      auto where_clause{select_cols_stmt.where_clause};
+      tables.print(table_name, col_names, where_clause);
     }
   }
 

@@ -24,6 +24,8 @@ class Tokenizer {
         create();
       } else if (is_next("FROM") || is_next("from")) {
         from();
+      } else if (is_next("WHERE") || is_next("where")) {
+        where();
       } else if (is_next("integer")) {
         integer();
       } else if (is_next("primary key")) {
@@ -36,6 +38,9 @@ class Tokenizer {
         table();
       } else {
         switch (c) {
+        case '=':
+          equals();
+          break;
         case ',':
           comma();
           break;
@@ -44,6 +49,9 @@ class Tokenizer {
           break;
         case ')':
           rparen();
+          break;
+        case '\'':
+          string();
           break;
         case '\n':
         case '\r':
@@ -54,6 +62,11 @@ class Tokenizer {
         default: {
           if (std::isalpha(c)) {
             identifier();
+            break;
+          }
+
+          if (std::isdigit(c)) {
+            number();
             break;
           }
           std::cout << c << '\n';
@@ -118,6 +131,26 @@ class Tokenizer {
     });
   }
 
+  void string() {
+    if (query_[pos_++] != '\'') {
+      throw std::runtime_error("error tokenizing string");
+    }
+
+    const size_t beg{pos_};
+    while (std::isalpha(query_[pos_])) {
+      ++pos_;
+    }
+    const std::string str{query_.substr(beg, pos_ - beg)};
+    tokens_.push_back({
+        .name = str,
+        .type = TokenType::STRING,
+    });
+
+    if (query_[pos_++] != '\'') {
+      throw std::runtime_error("error tokenizing string");
+    }
+  }
+
   void text() { keyword("TEXT", TokenType::TEXT); }
 
   void autoincrement() { keyword("AUTOINCREMENT", TokenType::AUTOINCREMENT); }
@@ -131,6 +164,8 @@ class Tokenizer {
   void select() { keyword("SELECT", TokenType::SELECT); }
 
   void from() { keyword("FROM", TokenType::FROM); }
+
+  void where() { keyword("WHERE", TokenType::WHERE); }
 
   void create() { keyword("CREATE", TokenType::CREATE); }
 
@@ -157,6 +192,27 @@ class Tokenizer {
     tokens_.push_back({
         .name = ",",
         .type = TokenType::COMMA,
+    });
+  }
+
+  void equals() {
+    ++pos_;
+    tokens_.push_back({
+        .name = "=",
+        .type = TokenType::EQUALS,
+    });
+  }
+
+  void number() {
+    size_t beg{pos_};
+    while (curr().has_value() && std::isdigit(curr().value())) {
+      ++pos_;
+    }
+
+    std::string number{query_.substr(beg, pos_ - beg)};
+    tokens_.push_back({
+        .name = number,
+        .type = TokenType::NUMBER,
     });
   }
 

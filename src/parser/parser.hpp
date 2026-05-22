@@ -11,21 +11,26 @@
 #include "token_type.hpp"
 
 struct SelectColsStmt;
-struct SelectColStmt;
 struct SelectAllStmt;
 struct CreateStmt;
 
-using Stmt =
-    std::variant<SelectColsStmt, SelectColStmt, SelectAllStmt, CreateStmt>;
+using Stmt = std::variant<SelectColsStmt, SelectAllStmt, CreateStmt>;
 
-struct SelectColStmt {
+enum class ComparisonOp {
+  EQUALS,
+  NOT_EQUALS,
+};
+
+struct WhereClause {
   std::string col_name{};
-  std::string table_name{};
+  std::string col_val{};
+  ComparisonOp op{};
 };
 
 struct SelectColsStmt {
   std::vector<std::string> col_names{};
   std::string table_name{};
+  std::optional<WhereClause> where_clause{};
 };
 
 struct SelectAllStmt {
@@ -74,13 +79,8 @@ class Parser {
       return select_all_statement();
     }
 
-    if (TokenType::IDENTIFIER == peek().type && next().has_value() &&
-        TokenType::COMMA == next().value().type) {
-      return select_cols_statement();
-    }
-
     if (TokenType::IDENTIFIER == peek().type) {
-      return select_col_statement();
+      return select_cols_statement();
     }
 
     throw std::runtime_error("error parsing select statement");
@@ -108,21 +108,25 @@ class Parser {
     }
     expect(TokenType::FROM);
     auto table_name{identifier()};
+
+    std::optional<WhereClause> where_clause{};
+    if (peek().type == TokenType::WHERE) {
+      expect(TokenType::WHERE);
+      auto col_name{identifier()};
+      auto op{comparision()};
+      auto col_val{value()};
+      where_clause = WhereClause{
+          .col_name = col_name,
+          .col_val = col_val,
+          .op = op,
+      };
+    }
+
     expect(TokenType::END);
     return SelectColsStmt{
         .col_names = col_names,
         .table_name = table_name,
-    };
-  }
-
-  SelectColStmt select_col_statement() {
-    auto col_name{identifier()};
-    expect(TokenType::FROM);
-    auto table_name{identifier()};
-    expect(TokenType::END);
-    return SelectColStmt{
-        .col_name = col_name,
-        .table_name = table_name,
+        .where_clause = where_clause,
     };
   }
 
@@ -206,6 +210,24 @@ class Parser {
 
   std::string identifier() { return expect(TokenType::IDENTIFIER).name; }
 
+  ComparisonOp comparision() {
+    if (peek().type == TokenType::EQUALS) {
+      advance();
+      return ComparisonOp::EQUALS;
+    } else if (peek().type == TokenType::NOT_EQUALS) {
+      advance();
+      return ComparisonOp::NOT_EQUALS;
+    }
+    throw std::runtime_error("parse comparison error");
+  }
+
+  std::string value() {
+    if (peek().type == TokenType::STRING || peek().type == TokenType::NUMBER) {
+      return advance().name;
+    }
+    throw std::runtime_error("parse value error of " + peek().name);
+  }
+
   const std::optional<Token> next() const {
     if (curr_ + 1 >= tokens_.size()) {
       return {};
@@ -218,7 +240,7 @@ class Parser {
 
   const Token& expect(TokenType type) {
     if (peek().type != type) {
-      throw std::runtime_error("unexpected token");
+      throw std::runtime_error("unexpected token of " + peek().name);
     }
     return advance();
   }

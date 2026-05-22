@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include "../parser/parser.hpp"
 #include "rows.hpp"
 
 class Table {
@@ -28,8 +29,9 @@ class Table {
 
   void print(std::string_view col_name) const { rows_.print(col_name); }
 
-  void print(const std::vector<std::string>& col_names) const {
-    rows_.print(col_names);
+  void print(const std::vector<std::string>& col_names,
+             std::optional<WhereClause> clause) const {
+    rows_.print(col_names, clause);
   }
 
   private:

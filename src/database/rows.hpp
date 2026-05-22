@@ -4,6 +4,7 @@
 #include <expected>
 #include <vector>
 
+#include "../parser/parser.hpp"
 #include "row.hpp"
 
 class Rows final : public std::vector<Row> {
@@ -49,9 +50,10 @@ class Rows final : public std::vector<Row> {
     }
   }
 
-  void print(const std::vector<std::string>& col_names) const {
+  void print(const std::vector<std::string>& col_names,
+             std::optional<WhereClause> clause) const {
     for (const auto& r : *this) {
-      r.print(col_names);
+      r.print(col_names, clause);
     }
   }
 };

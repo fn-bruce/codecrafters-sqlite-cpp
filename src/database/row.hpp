@@ -3,6 +3,7 @@
 
 #include <expected>
 
+#include "../parser/parser.hpp"
 #include "columns.hpp"
 
 class Row {
@@ -27,8 +28,9 @@ class Row {
 
   void print(std::string_view col_name) const { columns_.print(col_name); }
 
-  void print(const std::vector<std::string>& col_names) const {
-    columns_.print(col_names);
+  void print(const std::vector<std::string>& col_names,
+             std::optional<WhereClause> clause) const {
+    columns_.print(col_names, clause);
   }
 
   private:

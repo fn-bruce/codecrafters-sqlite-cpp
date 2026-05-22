@@ -7,6 +7,7 @@
 #include <variant>
 #include <vector>
 
+#include "../parser/parser.hpp"
 #include "column.hpp"
 
 class Columns final : public std::vector<Column> {
@@ -72,7 +73,31 @@ class Columns final : public std::vector<Column> {
     std::cout << '\n';
   }
 
-  void print(const std::vector<std::string>& col_names) const {
+  void print(const std::vector<std::string>& col_names,
+             std::optional<WhereClause> clause_res) const {
+
+    if (clause_res) {
+      auto clause{clause_res.value()};
+      auto it{std::find_if(begin(), end(), [&clause](const Column& c) {
+        if (c.key() != clause.col_name) {
+          return false;
+        }
+
+        if (std::holds_alternative<std::string>(c.value())) {
+          if (clause.op == ComparisonOp::EQUALS) {
+            return std::get<std::string>(c.value()) == clause.col_val;
+          } else {
+            return std::get<std::string>(c.value()) != clause.col_val;
+          }
+        }
+
+        return false;
+      })};
+      if (it == end()) {
+        return;
+      }
+    }
+
     size_t count{};
     for (const auto& cn : col_names) {
       auto it{std::find_if(begin(), end(),
