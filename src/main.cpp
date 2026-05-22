@@ -108,6 +108,8 @@ std::vector<std::string> get_table_names(std::ifstream& db,
   return names;
 }
 
+
+
 int main(int argc, char* argv[]) {
   // Flush after every std::cout / std::cerr
   std::cout << std::unitbuf;
@@ -123,19 +125,27 @@ int main(int argc, char* argv[]) {
 
   Database database{database_file_path};
 
-  auto tables_result{Tables::create(database)};
-  if (!tables_result) {
-    throw std::runtime_error("error creating tables");
-  }
-
-  auto tables{tables_result.value()};
-
   if (command == ".dbinfo") {
     std::cout << "number of tables: " << database.table_count() << '\n';
     std::cout << "database page size: " << database.page_size() << '\n';
   } else if (command == ".tables") {
-    tables.print_table_names();
+    std::ifstream db(database_file_path, std::ios::binary);
+    auto table_count{get_table_count(db)};
+    auto table_names{get_table_names(db, table_count)};
+    for (size_t i{}; i < table_names.size(); ++i) {
+      std::cout << table_names[i];
+      if (i + 1 < table_names.size())
+        std::cout << ' ';
+    }
+    std::cout << '\n';
   } else {
+    auto tables_result{Tables::create(database)};
+    if (!tables_result) {
+      throw std::runtime_error("error creating tables");
+    }
+
+    auto tables{tables_result.value()};
+
     auto tokenizer{Tokenizer{command}};
     auto tokens{tokenizer.tokenize()};
     auto parser{Parser{tokens}};
