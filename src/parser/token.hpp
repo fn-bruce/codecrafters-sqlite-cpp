@@ -15,4 +15,4 @@ struct Token {
   TokenType type;
 };
 
-#endif  // INCLUDE_SRC_TOKEN_HPP_
+#endif // INCLUDE_SRC_TOKEN_HPP_

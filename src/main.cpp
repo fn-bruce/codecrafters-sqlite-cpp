@@ -1,6 +1,5 @@
 #include <array>
 #include <cstring>
-#include <format>
 #include <fstream>
 #include <ios>
 #include <iostream>
@@ -8,8 +7,11 @@
 #include <variant>
 #include <vector>
 
-#include "parser.hpp"
-#include "tokenizer.hpp"
+#include "database/database.hpp"
+#include "database/tables.hpp"
+#include "database/utils.hpp"
+#include "parser/parser.hpp"
+#include "parser/tokenizer.hpp"
 
 constexpr int DATABASE_HEADER_SIZE{100};
 constexpr int PAGE_HEADER_SIZE{8};
@@ -25,29 +27,6 @@ void print_tokens(Tokens tokens) {
   for (const auto& t : tokens) {
     std::cout << t.name << '\n';
   }
-}
-
-template <typename T>
-T read_big_endian(const uint8_t* data) {
-  T result{};
-  for (size_t i{}; i < sizeof(T); ++i) {
-    result = (result << 8) | data[i];
-  }
-  return result;
-}
-
-std::pair<uint64_t, int> read_varint(std::ifstream& db) {
-  constexpr uint8_t CONTINUATION_BIT{0b1000'0000};
-  constexpr uint8_t MASK{0b0111'1111};
-  uint64_t result{};
-  int bytes_read{};
-  uint8_t curr_byte{};
-  do {
-    db.read(reinterpret_cast<char*>(&curr_byte), 1);
-    result = (result << 7) | (curr_byte & MASK);
-    ++bytes_read;
-  } while (curr_byte & CONTINUATION_BIT);
-  return {result, bytes_read};
 }
 
 unsigned short get_page_size(std::ifstream& db) {
@@ -206,7 +185,6 @@ int get_all_row_count(std::ifstream& db, std::string table_name) {
     while (true) {
       std::array<char, 2> curr_bytes{};
       db.read(reinterpret_cast<char*>(curr_bytes.data()), 2);
-      // std::cout << "curr_byte: " << std::format("{:#x}", curr_byte) << '\n';
       if (!curr_bytes[0] && !curr_bytes[1]) {
         break;
       }
@@ -247,16 +225,17 @@ int get_col_row(std::ifstream& db, std::string col_name,
     db.read(reinterpret_cast<char*>(&row_id), 1);
 
     // get record header size
-    auto [record_header_size, rhs_bytes] = read_varint(db);
+    uint8_t record_header_size{};
+    db.read(reinterpret_cast<char*>(&record_header_size), 1);
 
     // get serial types
     std::vector<int> serial_type_codes{};
     serial_type_codes.reserve(static_cast<size_t>(record_header_size - 1));
 
-    size_t header_bytes_read{static_cast<size_t>(rhs_bytes)};
-    while (header_bytes_read < record_header_size) {
+    size_t record_count{1};
+    while (record_count < static_cast<size_t>(record_header_size)) {
       auto [result, bytes_read] = read_varint(db);
-      header_bytes_read += bytes_read;
+      record_count += bytes_read;
       serial_type_codes.push_back(result);
     }
 
@@ -380,9 +359,6 @@ int get_col_row(std::ifstream& db, std::string col_name,
 
       size_t stc_i{};
       for (const auto& [k, v] : create_stmt.cols) {
-        if (stc_i >= serial_type_codes.size()) {
-          continue;
-        }
         const auto& stc{serial_type_codes[stc_i++]};
         std::string col_val{};
         if (stc == 0) {
@@ -426,44 +402,44 @@ int main(int argc, char* argv[]) {
   std::string database_file_path = argv[1];
   std::string command = argv[2];
 
+  Database database{database_file_path};
+
   if (command == ".dbinfo") {
-    std::ifstream db(database_file_path, std::ios::binary);
-    if (!db) {
-      std::cerr << "Failed to open the database file" << std::endl;
-      return 1;
-    }
-
-    auto page_size{get_page_size(db)};
-    auto table_count{get_table_count(db)};
-
-    std::cout << "number of tables: " << table_count << '\n';
-    std::cout << "database page size: " << page_size << '\n';
+    std::cout << "number of tables: " << database.table_count() << '\n';
+    std::cout << "database page size: " << database.page_size() << '\n';
   } else if (command == ".tables") {
     std::ifstream db(database_file_path, std::ios::binary);
     auto table_count{get_table_count(db)};
     auto table_names{get_table_names(db, table_count)};
     for (size_t i{}; i < table_names.size(); ++i) {
       std::cout << table_names[i];
-      if (i + 1 < table_names.size()) std::cout << ' ';
+      if (i + 1 < table_names.size())
+        std::cout << ' ';
     }
     std::cout << '\n';
   } else {
-    std::ifstream db(database_file_path, std::ios::binary);
+    auto tables_result{Tables::create(database)};
+    if (!tables_result) {
+      throw std::runtime_error("error creating tables");
+    }
+
+    auto tables{tables_result.value()};
+
     auto tokenizer{Tokenizer{command}};
     auto tokens{tokenizer.tokenize()};
     auto parser{Parser{tokens}};
     auto stmt{parser.parse()};
 
     if (std::holds_alternative<SelectAllStmt>(stmt)) {
-      auto select_all_stmt{std::get<SelectAllStmt>(stmt)};
-      auto table_name{select_all_stmt.name};
-      auto row_count{get_all_row_count(db, table_name)};
-      std::cout << row_count << '\n';
+      // auto select_all_stmt{std::get<SelectAllStmt>(stmt)};
+      // auto table_name{select_all_stmt.name};
+      // auto row_count{get_all_row_count(db, table_name)};
+      // std::cout << row_count << '\n';
     } else if (std::holds_alternative<SelectColStmt>(stmt)) {
       auto select_col_stmt{std::get<SelectColStmt>(stmt)};
       auto col_name{select_col_stmt.col_name};
       auto table_name{select_col_stmt.table_name};
-      auto row_count{get_col_row(db, col_name, table_name)};
+      tables.print(table_name, col_name);
     }
   }
 

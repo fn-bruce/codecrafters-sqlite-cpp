@@ -9,7 +9,7 @@
 #include "token.hpp"
 
 class Tokenizer {
- public:
+  public:
   Tokenizer(std::string_view query) : query_{query} {}
 
   Tokens tokenize() {
@@ -36,29 +36,29 @@ class Tokenizer {
         table();
       } else {
         switch (c) {
-          case ',':
-            comma();
+        case ',':
+          comma();
+          break;
+        case '(':
+          lparen();
+          break;
+        case ')':
+          rparen();
+          break;
+        case '\n':
+        case '\r':
+        case '\t':
+        case ' ':
+          ++pos_;
+          break;
+        default: {
+          if (std::isalpha(c)) {
+            identifier();
             break;
-          case '(':
-            lparen();
-            break;
-          case ')':
-            rparen();
-            break;
-          case '\n':
-          case '\r':
-          case '\t':
-          case ' ':
-            ++pos_;
-            break;
-          default: {
-            if (std::isalpha(c)) {
-              identifier();
-              break;
-            }
-            std::cout << c << '\n';
-            throw std::runtime_error("issue tokenizing");
           }
+          std::cout << c << '\n';
+          throw std::runtime_error("issue tokenizing");
+        }
         }
       }
     }
@@ -68,7 +68,7 @@ class Tokenizer {
     return tokens_;
   }
 
- private:
+  private:
   Tokens tokens_{};
   const std::string query_{};
   size_t pos_{};
@@ -180,4 +180,4 @@ class Tokenizer {
   }
 };
 
-#endif  // INCLUDE_SRC_TOKENIZER_HPP_
+#endif // INCLUDE_SRC_TOKENIZER_HPP_
