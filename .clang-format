@@ -16,3 +16,9 @@ SortIncludes: CaseSensitive
 IncludeBlocks: Preserve
 SpaceAfterTemplateKeyword: true
 AlwaysBreakTemplateDeclarations: Yes
+
+BinPackParameters: AlwaysOnePerLine
+ApplyAlwaysOnePerLineToTemplateArguments: true
+AlignAfterOpenBracket: BlockIndent
+BinPackArguments: false
+ContinuationIndentWidth: 2

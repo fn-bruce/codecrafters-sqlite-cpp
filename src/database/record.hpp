@@ -3,80 +3,107 @@
 
 #include <fstream>
 #include <iostream>
+#include <variant>
 #include <vector>
 
 #include "utils.hpp"
 
-class Record {
-  public:
-  static Record create(std::ifstream& db) { return {db}; }
+using Null = std::monostate;
+using Int8 = int8_t;
+using Int16 = int16_t;
+using Int24 = std::array<int8_t, 3>;
+using Int32 = int32_t;
+using Int48 = std::array<int8_t, 5>;
+using Int64 = int64_t;
+using Double = double;
+using Blob = std::vector<int8_t>;
+using String = std::string;
+using Value = std::variant<Null, Int8, Int16, Int24, Int32, Int48, Int64,
+                           Double, Blob, String>;
+using Values = std::vector<Value>;
 
-  const std::vector<std::string>& vals() const noexcept { return vals_; }
-
-  void print() const {
-    std::cout << "=== Record ===\n";
-
-    std::cout << "Header Size: " << header_size_ << '\n';
-
-    std::cout << "Serial Types: " << '\n';
-    for (const auto& t : serial_types_) {
-      std::cout << "- " << t << '\n';
-    }
-
-    std::cout << "Column Values: " << '\n';
-    for (const auto& v : vals_) {
-      std::cout << "- " << v << '\n';
-    }
-
-    std::cout << '\n';
-  }
-
-  private:
-  Record(std::ifstream& db)
-      : header_size_{read_varint(db).first},
-        serial_types_{read_serial_types(db)}, vals_{read_vals(db)} {}
-
-  uint64_t header_size_{};
-  std::vector<uint64_t> serial_types_{};
-  std::vector<std::string> vals_{};
-
-  std::vector<uint64_t> read_serial_types(std::ifstream& db) {
-    // get serial types
-    std::vector<uint64_t> serial_type_codes{};
-    serial_type_codes.reserve(static_cast<size_t>(header_size_ - 1));
-
-    size_t record_count{1};
-    while (record_count < static_cast<size_t>(header_size_)) {
-      auto [result, bytes_read] = read_varint(db);
-      record_count += bytes_read;
-      serial_type_codes.push_back(result);
-    }
-    return serial_type_codes;
-  }
-
-  std::vector<std::string> read_vals(std::ifstream& db) {
-    std::vector<std::string> vals{};
-    vals.reserve(serial_types_.size());
-    for (const auto& t : serial_types_) {
-      std::string val{};
-      if (t == 0) {
-        val = "null";
-      } else if (t == 1) {
-        uint8_t num{read<uint8_t>(db)};
-        val = std::to_string(num);
-      } else if (t % 2 != 0) {
-        auto text_size{(t - 13) / 2};
-        val.reserve(text_size);
-        for (size_t i{}; i < static_cast<size_t>(text_size); ++i) {
-          char c{};
-          db.read(&c, 1);
-          val += c;
-        }
-      }
-      vals.push_back(val);
-    }
-    return vals;
-  }
+struct Record {
+  Values values{};
 };
+
+inline Record read_record(std::ifstream &db) {
+  // read header
+
+  // read header size
+  uint64_t header_size{read_varint(db).first};
+
+  // read serial types
+  std::vector<uint64_t> serial_types{};
+  serial_types.reserve(static_cast<size_t>(header_size - 1));
+  int count{};
+  while (count < header_size - 1) {
+    const auto [result, bytes_read] {read_varint(db)};
+    serial_types.emplace_back(result);
+    count += bytes_read;
+  }
+
+  // read values
+  Values values{};
+  for (const auto &t : serial_types) {
+    Value value{};
+    if (t == 0) {
+      value = Null{};
+    } else if (t == 1) {
+      value = Int8{read<Int8>(db)};
+    } else if (t == 2) {
+      value = Int16{read<Int16>(db)};
+    } else if (t == 3) {
+      Int24 arr{};
+      for (size_t i{}; i < arr.size(); ++i) {
+        Int8 mask{static_cast<Int8>(0b1111'1111)};
+        Int8 curr{read<Int8>(db)};
+        Int8 byte{static_cast<Int8>(curr | mask)};
+        arr[i] = byte;
+      }
+      value = arr;
+    } else if (t == 4) {
+      value = Int32{read<Int32>(db)};
+    } else if (t == 5) {
+      Int48 arr{};
+      for (size_t i{}; i < arr.size(); ++i) {
+        Int8 mask{static_cast<Int8>(0b1111'1111)};
+        Int8 curr{read<Int8>(db)};
+        Int8 byte{static_cast<Int8>(curr | mask)};
+        arr[i] = byte;
+      }
+      value = arr;
+    } else if (t == 6) {
+      value = Int64{read<Int64>(db)};
+    } else if (t == 7) {
+      // value = Double{read<Double>(db)};
+    } else if (t == 8 || t == 9 || t == 10 || t == 11) {
+      // TODO: handle missing types
+    } else if (t >= 12 && t % 2 == 0) {
+      const size_t size{static_cast<size_t>((t - 12) / 2)};
+      Blob blob{};
+      blob.reserve(size);
+      for (size_t i{}; i < size; ++i) {
+        char c{};
+        db.read(&c, 1);
+        blob.emplace_back(c);
+      }
+      value = blob;
+    } else if (t >= 13 && t % 2 == 1) {
+      const size_t size{static_cast<size_t>((t - 13) / 2)};
+      String str{};
+      str.reserve(size);
+      for (size_t i{}; i < size; ++i) {
+        char c{};
+        db.read(&c, 1);
+        str += c;
+      }
+      value = str;
+    }
+    values.emplace_back(value);
+  }
+  return {
+      .values = values,
+  };
+}
 
 #endif // INCLUDE_SRC_RECORD_HPP_

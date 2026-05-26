@@ -2,7 +2,9 @@
 #define INCLUDE_SRC_DATABASE_HPP_
 
 #include <cassert>
+#include <stdexcept>
 #include <string_view>
+#include <variant>
 
 #include "database_header.hpp"
 #include "pages.hpp"
@@ -12,13 +14,13 @@
 #include "../parser/tokenizer.hpp"
 
 class Database {
-  public:
+public:
   Database(std::string_view file_path)
       : file_path_{file_path}, db_{init_db(file_path)},
         header_{DatabaseHeader::create(db_)},
         pages_{Pages::create(header_, db_)}, tables_{init_tables()} {}
 
-  const Tables& tables() const { return tables_; }
+  const Tables &tables() const { return tables_; }
 
   uint16_t page_size() const { return header_.page_size(); }
 
@@ -35,7 +37,7 @@ class Database {
     pages_.print();
   }
 
-  private:
+private:
   const std::string file_path_;
   std::ifstream db_;
   DatabaseHeader header_;
@@ -61,16 +63,27 @@ class Database {
     constexpr size_t ROOT_PAGE_IDX{3};
     std::string_view SQLITE_SEQ_TBL_NAME{"sqlite_sequence"};
     auto schema{schema_page()};
-    for (const auto& schema_page_cell : schema.cells()) {
-      const auto& schema_page_record{schema_page_cell.record()};
-      const auto& vals{schema_page_record.vals()};
-      const auto& table_name{vals[NAME_IDX]};
+    for (const auto &schema_page_cell : schema.cells()) {
+      const auto &schema_page_record{schema_page_cell.record()};
+      const auto &vals{schema_page_record.values};
 
+      const auto &table_name_res{vals[NAME_IDX]};
+      if (!std::holds_alternative<String>(table_name_res)) {
+        throw std::runtime_error("issue getting table name");
+      }
+
+      const auto &table_name{std::get<String>(table_name_res)};
       if (table_name == SQLITE_SEQ_TBL_NAME) {
         continue;
       }
 
-      const auto& create_stmt_str{vals.back()};
+
+      const auto &create_stmt_str_res{vals.back()};
+      if (!std::holds_alternative<String>(create_stmt_str_res)) {
+        throw std::runtime_error("issue getting create statment");
+      }
+
+      const auto &create_stmt_str{std::get<String>(create_stmt_str_res)};
       auto tokenizer{Tokenizer{create_stmt_str}};
       auto tokens{tokenizer.tokenize()};
       auto parser{Parser{tokens}};
@@ -85,33 +98,70 @@ class Database {
 
       std::vector<std::string> col_names{};
       col_names.reserve(cols.size());
-      for (const auto& [name, _] : cols) {
+      for (const auto &[name, _] : cols) {
         col_names.emplace_back(name);
       }
 
-      const auto root_page_str{vals[ROOT_PAGE_IDX]};
-      const auto root_page{std::stoull(root_page_str)};
-      const auto& tbl_page{page(root_page)};
-      const auto& tbl_cells{tbl_page.cells()};
+      const auto root_page_res{vals[ROOT_PAGE_IDX]};
+      if (!std::holds_alternative<Int8>(root_page_res)) {
+        throw std::runtime_error("issue getting root page");
+      }
+
+      const auto root_page{std::get<Int8>(root_page_res)};
+      const auto &tbl_page{page(root_page)};
+      const auto &tbl_cells{tbl_page.cells()};
 
       std::vector<std::vector<std::string>> row_vals{};
       row_vals.reserve(tbl_cells.size());
 
-      for (const auto& tbl_cell : tbl_cells) {
-        const auto& tbl_record{tbl_cell.record()};
-        const auto& tbl_vals{tbl_record.vals()};
+      for (const auto &tbl_cell : tbl_cells) {
+        const auto &tbl_record{tbl_cell.record()};
+        const auto &tbl_vals{tbl_record.values};
 
         std::vector<std::string> vals{};
         vals.reserve(cols.size());
 
         for (size_t i{}; i < cols.size(); ++i) {
-          const auto& [_, col]{cols[i]};
-          const auto& tbl_val{tbl_vals[i]};
-          if (col.col_name == "id" && col.primary_key) {
+          const auto &[_, col]{cols[i]};
+
+          const auto &tbl_val{tbl_vals[i]};
+
+          if (std::holds_alternative<Null>(tbl_val) && col.col_name == "id" &&
+              col.primary_key) {
             vals.emplace_back(std::to_string(tbl_cell.row_id()));
             continue;
           }
-          vals.emplace_back(tbl_val);
+
+          std::string tbl_val_str{};
+          if (std::holds_alternative<Int8>(tbl_val)) {
+            tbl_val_str = std::to_string(std::get<Int8>(tbl_val));
+          } else if (std::holds_alternative<Int16>(tbl_val)) {
+            tbl_val_str = std::to_string(std::get<Int16>(tbl_val));
+          } else if (std::holds_alternative<Int24>(tbl_val)) {
+            Int32 tmp{};
+            for (const auto &b : std::get<Int24>(tbl_val)) {
+              tmp |= b;
+              tmp >>= 8;
+            }
+            tbl_val_str = std::to_string(tmp);
+          } else if (std::holds_alternative<Int32>(tbl_val)) {
+            tbl_val_str = std::to_string(std::get<Int32>(tbl_val));
+          } else if (std::holds_alternative<Int48>(tbl_val)) {
+            Int32 tmp{};
+            for (const auto &b : std::get<Int48>(tbl_val)) {
+              tmp |= b;
+              tmp <<= 8;
+            }
+            tbl_val_str = std::to_string(tmp);
+          } else if (std::holds_alternative<Int64>(tbl_val)) {
+            tbl_val_str = std::to_string(std::get<Int64>(tbl_val));
+          } else if (std::holds_alternative<String>(tbl_val)) {
+            tbl_val_str = std::get<std::string>(tbl_val);
+          } else {
+            throw std::runtime_error("issue evaluating val type");
+          }
+
+          vals.emplace_back(tbl_val_str);
         }
         row_vals.emplace_back(vals);
       }
@@ -122,12 +172,12 @@ class Database {
     return tables;
   }
 
-  const Page& schema_page() const {
+  const Page &schema_page() const {
     assert(!pages_.empty() && "schema page doesn't exist in empty pages");
     return pages_.front();
   }
 
-  const Page& page(size_t root_page) const {
+  const Page &page(size_t root_page) const {
     assert(root_page != 0 && "root_page is never 0");
     size_t idx{root_page - 1};
     assert(idx <= pages_.size() && "idx for page doesn't exist");
