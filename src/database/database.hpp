@@ -20,7 +20,25 @@ public:
         header_{DatabaseHeader::create(db_)},
         pages_{Pages::create(header_, db_)}, tables_{init_tables()} {}
 
+  const std::vector<std::string_view> table_names() const {
+    std::vector<std::string_view> table_names{};
+    table_names.reserve(tables_.size());
+    for (const auto& t : tables_) {
+      table_names.push_back(t.tbl_name());
+    }
+    return table_names;
+  }
+
   const Tables &tables() const { return tables_; }
+
+  size_t row_count(std::string_view tbl_name) const {
+    for (const auto& t : tables_) {
+      if (t.tbl_name() == tbl_name) {
+        return t.row_count();
+      }
+    }
+    return 0;
+  }
 
   uint16_t page_size() const { return header_.page_size(); }
 
@@ -35,6 +53,12 @@ public:
   void print() const {
     header_.print();
     pages_.print();
+  }
+
+  void print(std::string_view tbl_name,
+             const std::vector<std::string>& col_names,
+             std::optional<WhereClause> clause) const {
+    tables_.print(tbl_name, col_names, clause);
   }
 
 private:

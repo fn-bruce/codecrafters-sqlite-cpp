@@ -5,7 +5,6 @@
 #include <variant>
 
 #include "database/database.hpp"
-#include "database/tables.hpp"
 #include "parser/parser.hpp"
 #include "parser/tokenizer.hpp"
 
@@ -31,13 +30,16 @@ int main(int argc, char* argv[]) {
   std::string command{argv[2]};
 
   const Database database{database_file_path};
-  const Tables& tables{database.tables()};
 
   if (command == ".dbinfo") {
     std::cout << "number of tables: " << database.table_count() << '\n';
     std::cout << "database page size: " << database.page_size() << '\n';
   } else if (command == ".tables") {
-    tables.print_table_names();
+    auto table_names{database.table_names()};
+    for (const auto& n : database.table_names()) {
+      std::cout << n << ' ';
+    }
+    std::cout << '\n';
   } else {
     auto tokenizer{Tokenizer{command}};
     auto tokens{tokenizer.tokenize()};
@@ -47,14 +49,14 @@ int main(int argc, char* argv[]) {
     if (std::holds_alternative<SelectAllStmt>(stmt)) {
       auto select_all_stmt{std::get<SelectAllStmt>(stmt)};
       auto table_name{select_all_stmt.name};
-      auto row_count{tables.row_count(table_name)};
+      auto row_count{database.row_count(table_name)};
       std::cout << row_count << '\n';
     } else if (std::holds_alternative<SelectColsStmt>(stmt)) {
       auto select_cols_stmt{std::get<SelectColsStmt>(stmt)};
       auto col_names{select_cols_stmt.col_names};
       auto table_name{select_cols_stmt.table_name};
       auto where_clause{select_cols_stmt.where_clause};
-      tables.print(table_name, col_names, where_clause);
+      database.print(table_name, col_names, where_clause);
     }
   }
 
