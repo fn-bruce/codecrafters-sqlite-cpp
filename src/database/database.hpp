@@ -122,21 +122,21 @@ private:
       const auto &vals{schema_page_record.values};
 
       const auto &table_name_res{vals[NAME_IDX]};
-      if (!std::holds_alternative<String>(table_name_res)) {
+      if (!std::holds_alternative<std::string>(table_name_res)) {
         throw std::runtime_error("issue getting table name");
       }
 
-      const auto &table_name{std::get<String>(table_name_res)};
+      const auto &table_name{std::get<std::string>(table_name_res)};
       if (table_name == SQLITE_SEQ_TBL_NAME) {
         continue;
       }
 
       const auto &create_stmt_str_res{vals.back()};
-      if (!std::holds_alternative<String>(create_stmt_str_res)) {
+      if (!std::holds_alternative<std::string>(create_stmt_str_res)) {
         throw std::runtime_error("issue getting create statment");
       }
 
-      const auto &create_stmt_str{std::get<String>(create_stmt_str_res)};
+      const auto &create_stmt_str{std::get<std::string>(create_stmt_str_res)};
       auto tokenizer{Tokenizer{create_stmt_str}};
       auto tokens{tokenizer.tokenize()};
       auto parser{Parser{tokens}};
@@ -156,11 +156,11 @@ private:
       }
 
       const auto root_page_res{vals[ROOT_PAGE_IDX]};
-      if (!std::holds_alternative<Int8>(root_page_res)) {
+      if (!std::holds_alternative<int8_t>(root_page_res)) {
         throw std::runtime_error("issue getting root page");
       }
 
-      const auto root_page{std::get<Int8>(root_page_res)};
+      const auto root_page{std::get<int8_t>(root_page_res)};
       const auto &tbl_page{page(root_page)};
       const auto &tbl_cells{tbl_page.cells()};
 
@@ -179,36 +179,36 @@ private:
 
           const auto &tbl_val{tbl_vals[i]};
 
-          if (std::holds_alternative<Null>(tbl_val) && col.col_name == "id" &&
+          if (std::holds_alternative<std::monostate>(tbl_val) && col.col_name == "id" &&
               col.primary_key) {
             vals.emplace_back(std::to_string(tbl_cell.row_id()));
             continue;
           }
 
           std::string tbl_val_str{};
-          if (std::holds_alternative<Int8>(tbl_val)) {
-            tbl_val_str = std::to_string(std::get<Int8>(tbl_val));
-          } else if (std::holds_alternative<Int16>(tbl_val)) {
-            tbl_val_str = std::to_string(std::get<Int16>(tbl_val));
-          } else if (std::holds_alternative<Int24>(tbl_val)) {
-            Int32 tmp{};
-            for (const auto &b : std::get<Int24>(tbl_val)) {
+          if (std::holds_alternative<int8_t>(tbl_val)) {
+            tbl_val_str = std::to_string(std::get<int8_t>(tbl_val));
+          } else if (std::holds_alternative<int16_t>(tbl_val)) {
+            tbl_val_str = std::to_string(std::get<int16_t>(tbl_val));
+          } else if (std::holds_alternative<std::array<int8_t, 3>>(tbl_val)) {
+            int32_t tmp{};
+            for (const auto &b : std::get<std::array<int8_t, 3>>(tbl_val)) {
               tmp |= b;
               tmp >>= 8;
             }
             tbl_val_str = std::to_string(tmp);
-          } else if (std::holds_alternative<Int32>(tbl_val)) {
-            tbl_val_str = std::to_string(std::get<Int32>(tbl_val));
-          } else if (std::holds_alternative<Int48>(tbl_val)) {
-            Int32 tmp{};
-            for (const auto &b : std::get<Int48>(tbl_val)) {
+          } else if (std::holds_alternative<int32_t>(tbl_val)) {
+            tbl_val_str = std::to_string(std::get<int32_t>(tbl_val));
+          } else if (std::holds_alternative<std::array<int8_t, 5>>(tbl_val)) {
+            int32_t tmp{};
+            for (const auto &b : std::get<std::array<int8_t, 5>>(tbl_val)) {
               tmp |= b;
               tmp <<= 8;
             }
             tbl_val_str = std::to_string(tmp);
-          } else if (std::holds_alternative<Int64>(tbl_val)) {
-            tbl_val_str = std::to_string(std::get<Int64>(tbl_val));
-          } else if (std::holds_alternative<String>(tbl_val)) {
+          } else if (std::holds_alternative<int64_t>(tbl_val)) {
+            tbl_val_str = std::to_string(std::get<int64_t>(tbl_val));
+          } else if (std::holds_alternative<std::string>(tbl_val)) {
             tbl_val_str = std::get<std::string>(tbl_val);
           } else {
             throw std::runtime_error("issue evaluating val type");
