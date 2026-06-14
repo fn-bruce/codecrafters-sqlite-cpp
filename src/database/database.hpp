@@ -23,7 +23,7 @@ public:
   const std::vector<std::string_view> table_names() const {
     std::vector<std::string_view> table_names{};
     table_names.reserve(tables_.size());
-    for (const auto& t : tables_) {
+    for (const auto &t : tables_) {
       table_names.push_back(t.tbl_name());
     }
     return table_names;
@@ -32,7 +32,7 @@ public:
   const Tables &tables() const { return tables_; }
 
   size_t row_count(std::string_view tbl_name) const {
-    for (const auto& t : tables_) {
+    for (const auto &t : tables_) {
       if (t.tbl_name() == tbl_name) {
         return t.row_count();
       }
@@ -50,13 +50,43 @@ public:
     return pages_.front().cell_count();
   }
 
+  void execute(std::string_view command) const {
+    if (command == ".dbinfo") {
+      std::cout << "number of tables: " << table_count() << '\n';
+      std::cout << "database page size: " << page_size() << '\n';
+    } else if (command == ".tables") {
+      for (const auto &n : table_names()) {
+        std::cout << n << ' ';
+      }
+      std::cout << '\n';
+    } else {
+      auto tokenizer{Tokenizer{command}};
+      auto tokens{tokenizer.tokenize()};
+      auto parser{Parser{tokens}};
+      auto stmt{parser.parse()};
+
+      if (std::holds_alternative<SelectAllStmt>(stmt)) {
+        auto select_all_stmt{std::get<SelectAllStmt>(stmt)};
+        auto table_name{select_all_stmt.name};
+        auto count{row_count(table_name)};
+        std::cout << count << '\n';
+      } else if (std::holds_alternative<SelectColsStmt>(stmt)) {
+        auto select_cols_stmt{std::get<SelectColsStmt>(stmt)};
+        auto col_names{select_cols_stmt.col_names};
+        auto table_name{select_cols_stmt.table_name};
+        auto where_clause{select_cols_stmt.where_clause};
+        print(table_name, col_names, where_clause);
+      }
+    }
+  }
+
   void print() const {
     header_.print();
     pages_.print();
   }
 
   void print(std::string_view tbl_name,
-             const std::vector<std::string>& col_names,
+             const std::vector<std::string> &col_names,
              std::optional<WhereClause> clause) const {
     tables_.print(tbl_name, col_names, clause);
   }
@@ -100,7 +130,6 @@ private:
       if (table_name == SQLITE_SEQ_TBL_NAME) {
         continue;
       }
-
 
       const auto &create_stmt_str_res{vals.back()};
       if (!std::holds_alternative<String>(create_stmt_str_res)) {
