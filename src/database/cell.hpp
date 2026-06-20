@@ -3,7 +3,6 @@
 
 #include <cstdint>
 #include <fstream>
-#include <iostream>
 
 #include "record.hpp"
 
@@ -14,24 +13,14 @@ struct TableLeafCell {
 
 class Cell {
 public:
-  Cell(std::ifstream &db)
-      : offset_{static_cast<uint16_t>(db.tellg())},
-        payload_size_{read_varint(db).first}, row_id_{read_varint(db).first},
-        record_{Record(db)} {}
+  Cell(std::ifstream &db);
 
   uint64_t row_id() const { return row_id_; }
   const Record &record() const { return record_; }
 
-  void print() const {
-    std::cout << "=== Cell ===\n";
-    std::cout << "Offset: " << offset_ << '\n';
-    std::cout << "Payload Size: " << payload_size_ << '\n';
-    std::cout << "Row ID: " << row_id_ << '\n';
-    std::cout << '\n';
-  }
+  void print() const;
 
 private:
-
   uint16_t offset_{};
   uint64_t payload_size_{};
   uint64_t row_id_{};

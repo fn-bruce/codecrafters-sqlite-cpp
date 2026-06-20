@@ -5,8 +5,6 @@
 #include <variant>
 #include <vector>
 
-#include "utils.hpp"
-
 using Value = std::variant<
   std::monostate,
   int8_t,

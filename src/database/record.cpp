@@ -1,4 +1,5 @@
 #include "record.hpp"
+#include "utils.hpp"
 
 Record::Record(std::ifstream &db) {
   read_record(db);
