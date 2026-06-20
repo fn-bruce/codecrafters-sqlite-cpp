@@ -3,8 +3,9 @@
 
 #include <fstream>
 
-#include "cells.hpp"
+#include "cell.hpp"
 #include "page_header.hpp"
+#include "database_header.hpp"
 
 class TableLeafPage {
 public:
@@ -14,12 +15,14 @@ public:
 
   uint16_t cell_count() const { return header_.num_of_cells(); }
 
-  const Cells& cells() const { return cells_; }
+  const std::vector<TableLeafCell>& cells() const { return cells_; }
 
 private:
   size_t offset_;
   PageHeader header_;
-  Cells cells_;
+  std::vector<TableLeafCell> cells_;
 };
+
+std::vector<TableLeafPage> read_pages(DatabaseHeader& header, std::ifstream& db);
 
 #endif // INCLUDE_SRC_PAGE_HPP_

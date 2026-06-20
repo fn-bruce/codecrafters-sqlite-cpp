@@ -7,7 +7,7 @@
 Database::Database(std::string_view file_path)
     : file_path_{file_path}, db_{init_db(file_path)},
       header_{DatabaseHeader(db_)},
-      pages_{Pages(header_, db_)}, tables_{init_tables()} {}
+      pages_{read_pages(header_, db_)}, tables_{init_tables()} {}
 
 const std::vector<std::string_view> Database::table_names() const {
   std::vector<std::string_view> table_names{};
@@ -67,7 +67,9 @@ void Database::execute(std::string_view command) const {
 
 void Database::print() const {
   header_.print();
-  pages_.print();
+  for (const auto &p : pages_) {
+    p.print();
+  }
 }
 
 void Database::print(

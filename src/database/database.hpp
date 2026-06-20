@@ -5,7 +5,7 @@
 #include <string_view>
 
 #include "database_header.hpp"
-#include "pages.hpp"
+#include "page.hpp"
 #include "tables.hpp"
 
 #include "../parser/parser.hpp"
@@ -36,7 +36,7 @@ private:
   const std::string file_path_;
   std::ifstream db_;
   DatabaseHeader header_;
-  Pages pages_{};
+  std::vector<TableLeafPage> pages_{};
   Tables tables_{};
 
   std::ifstream init_db(std::string_view file_path);
