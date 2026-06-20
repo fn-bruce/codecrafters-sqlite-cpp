@@ -7,10 +7,18 @@
 
 #include "utils.hpp"
 
-using Value =
-    std::variant<std::monostate, int8_t, int16_t, std::array<int8_t, 3>,
-                 int32_t, std::array<int8_t, 5>, int64_t, double,
-                 std::vector<int8_t>, std::string>;
+using Value = std::variant<
+  std::monostate,
+  int8_t,
+  int16_t,
+  std::array<int8_t, 3>,
+  int32_t,
+  std::array<int8_t, 5>,
+  int64_t,
+  double,
+  std::vector<int8_t>,
+  std::string
+>;
 using Values = std::vector<Value>;
 
 enum class SerialType : uint64_t {
