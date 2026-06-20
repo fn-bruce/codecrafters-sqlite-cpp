@@ -14,7 +14,10 @@ struct TableLeafCell {
 
 class Cell {
 public:
-  static Cell create(std::ifstream &db) { return {db}; }
+  Cell(std::ifstream &db)
+      : offset_{static_cast<uint16_t>(db.tellg())},
+        payload_size_{read_varint(db).first}, row_id_{read_varint(db).first},
+        record_{Record(db)} {}
 
   uint64_t row_id() const { return row_id_; }
   const Record &record() const { return record_; }
@@ -28,10 +31,6 @@ public:
   }
 
 private:
-  Cell(std::ifstream &db)
-      : offset_{static_cast<uint16_t>(db.tellg())},
-        payload_size_{read_varint(db).first}, row_id_{read_varint(db).first},
-        record_{Record(db)} {}
 
   uint16_t offset_{};
   uint64_t payload_size_{};

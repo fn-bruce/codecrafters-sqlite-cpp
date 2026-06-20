@@ -20,7 +20,7 @@ class Cells : public std::vector<Cell> {
 
     for (const auto& ptr : cell_ptrs) {
       db.seekg(page_offset + static_cast<size_t>(ptr));
-      cells.push_back(Cell::create(db));
+      cells.push_back(Cell(db));
     }
 
     return cells;
