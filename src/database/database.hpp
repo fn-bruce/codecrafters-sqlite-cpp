@@ -119,7 +119,7 @@ private:
     auto schema{schema_page()};
     for (const auto &schema_page_cell : schema.cells()) {
       const auto &schema_page_record{schema_page_cell.record()};
-      const auto &vals{schema_page_record.values};
+      const auto &vals{schema_page_record.values()};
 
       const auto &table_name_res{vals[NAME_IDX]};
       if (!std::holds_alternative<std::string>(table_name_res)) {
@@ -169,7 +169,7 @@ private:
 
       for (const auto &tbl_cell : tbl_cells) {
         const auto &tbl_record{tbl_cell.record()};
-        const auto &tbl_vals{tbl_record.values};
+        const auto &tbl_vals{tbl_record.values()};
 
         std::vector<std::string> vals{};
         vals.reserve(cols.size());

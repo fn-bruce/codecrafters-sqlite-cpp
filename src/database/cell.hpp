@@ -31,7 +31,7 @@ private:
   Cell(std::ifstream &db)
       : offset_{static_cast<uint16_t>(db.tellg())},
         payload_size_{read_varint(db).first}, row_id_{read_varint(db).first},
-        record_{read_record(db)} {}
+        record_{Record(db)} {}
 
   uint16_t offset_{};
   uint64_t payload_size_{};
