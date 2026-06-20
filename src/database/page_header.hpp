@@ -8,8 +8,8 @@
 #include "utils.hpp"
 
 class PageHeader {
-  public:
-  static PageHeader create(std::ifstream& db) { return {db}; }
+public:
+  PageHeader(std::ifstream& db) : db_{db} { parse(); }
 
   PageType type() const { return type_; }
   uint16_t num_of_cells() const { return num_of_cells_; }
@@ -58,7 +58,6 @@ class PageHeader {
   }
 
   private:
-  PageHeader(std::ifstream& db) : db_{db} { parse(); }
 
   std::ifstream& db_;
 

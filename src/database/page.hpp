@@ -2,25 +2,15 @@
 #define INCLUDE_SRC_PAGE_HPP_
 
 #include <fstream>
-#include <iostream>
 
 #include "cells.hpp"
 #include "page_header.hpp"
 
 class Page {
 public:
-  Page(std::ifstream& db)
-      : offset_{db.tellg() != 100 ? static_cast<size_t>(db.tellg()) : 0},
-        header_{PageHeader::create(db)},
-        cells_{Cells(offset_, header_.num_of_cells(), db)} {}
+  Page(std::ifstream& db);
 
-  void print() const {
-    std::cout << "=== Page ===\n";
-    std::cout << "Offset: " << offset_ << '\n';
-    std::cout << '\n';
-    header_.print();
-    cells_.print();
-  }
+  void print() const;
 
   uint16_t cell_count() const { return header_.num_of_cells(); }
 
