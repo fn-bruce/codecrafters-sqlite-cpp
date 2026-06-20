@@ -7,10 +7,10 @@
 #include "utils.hpp"
 
 class DatabaseHeader {
-  public:
-  static DatabaseHeader create(std::ifstream& db) {
+public:
+  DatabaseHeader(std::ifstream& db) : db_{db} {
     db.seekg(0);
-    return {db};
+    parse();
   }
 
   uint16_t page_size() const { return page_size_; }
@@ -51,9 +51,7 @@ class DatabaseHeader {
     std::cout << '\n';
   }
 
-  private:
-  DatabaseHeader(std::ifstream& db) : db_{db} { parse(); }
-
+private:
   std::ifstream& db_;
 
   std::string header_string_{};
