@@ -19,6 +19,7 @@ using Value = std::variant<
   std::vector<int8_t>,
   std::string
 >;
+
 using Values = std::vector<Value>;
 
 enum class SerialType : uint64_t {
