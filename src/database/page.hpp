@@ -6,9 +6,9 @@
 #include "cells.hpp"
 #include "page_header.hpp"
 
-class Page {
+class TableLeafPage {
 public:
-  Page(std::ifstream& db);
+  TableLeafPage(std::ifstream& db);
 
   void print() const;
 

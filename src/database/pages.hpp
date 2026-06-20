@@ -6,7 +6,7 @@
 #include "database_header.hpp"
 #include "page.hpp"
 
-class Pages : public std::vector<Page> {
+class Pages : public std::vector<TableLeafPage> {
 public:
   Pages() = default;
   Pages(DatabaseHeader& header, std::ifstream& db);

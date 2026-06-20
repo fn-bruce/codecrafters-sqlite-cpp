@@ -204,12 +204,12 @@ Tables Database::init_tables() {
   return tables;
 }
 
-const Page &Database::schema_page() const {
+const TableLeafPage &Database::schema_page() const {
   assert(!pages_.empty() && "schema page doesn't exist in empty pages");
   return pages_.front();
 }
 
-const Page &Database::page(size_t root_page) const {
+const TableLeafPage &Database::page(size_t root_page) const {
   assert(root_page != 0 && "root_page is never 0");
   size_t idx{root_page - 1};
   assert(idx <= pages_.size() && "idx for page doesn't exist");

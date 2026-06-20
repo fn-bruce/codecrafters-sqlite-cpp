@@ -43,9 +43,9 @@ private:
 
   Tables init_tables();
 
-  const Page &schema_page() const;
+  const TableLeafPage &schema_page() const;
 
-  const Page &page(size_t root_page) const;
+  const TableLeafPage &page(size_t root_page) const;
 
   std::vector<std::string> get_col_names(std::string tbl_name) const;
 };
