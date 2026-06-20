@@ -27,7 +27,7 @@ class Page {
   Page(std::ifstream& db)
       : offset_{db.tellg() != 100 ? static_cast<size_t>(db.tellg()) : 0},
         header_{PageHeader::create(db)},
-        cells_{Cells::create(offset_, header_.num_of_cells(), db)} {}
+        cells_{Cells(offset_, header_.num_of_cells(), db)} {}
 
   size_t offset_;
   PageHeader header_;
