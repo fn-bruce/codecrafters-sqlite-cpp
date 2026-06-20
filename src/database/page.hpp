@@ -8,8 +8,11 @@
 #include "page_header.hpp"
 
 class Page {
-  public:
-  static Page create(std::ifstream& db) { return {db}; }
+public:
+  Page(std::ifstream& db)
+      : offset_{db.tellg() != 100 ? static_cast<size_t>(db.tellg()) : 0},
+        header_{PageHeader::create(db)},
+        cells_{Cells(offset_, header_.num_of_cells(), db)} {}
 
   void print() const {
     std::cout << "=== Page ===\n";
@@ -23,12 +26,7 @@ class Page {
 
   const Cells& cells() const { return cells_; }
 
-  private:
-  Page(std::ifstream& db)
-      : offset_{db.tellg() != 100 ? static_cast<size_t>(db.tellg()) : 0},
-        header_{PageHeader::create(db)},
-        cells_{Cells(offset_, header_.num_of_cells(), db)} {}
-
+private:
   size_t offset_;
   PageHeader header_;
   Cells cells_;

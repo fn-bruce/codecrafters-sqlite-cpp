@@ -18,7 +18,7 @@ public:
   Database(std::string_view file_path)
       : file_path_{file_path}, db_{init_db(file_path)},
         header_{DatabaseHeader::create(db_)},
-        pages_{Pages::create(header_, db_)}, tables_{init_tables()} {}
+        pages_{Pages(header_, db_)}, tables_{init_tables()} {}
 
   const std::vector<std::string_view> table_names() const {
     std::vector<std::string_view> table_names{};

@@ -7,20 +7,17 @@
 #include "page.hpp"
 
 class Pages : public std::vector<Page> {
-  public:
-  static Pages create(const DatabaseHeader& header, std::ifstream& db) {
-    Pages pages{};
-
+public:
+  Pages() = default;
+  Pages(DatabaseHeader& header, std::ifstream& db) {
     for (size_t i{}; i < static_cast<size_t>(header.page_count()); ++i) {
       size_t offset{header.page_size() * i};
       if (i == 0) {
         offset += 100;
       }
       db.seekg(offset);
-      pages.push_back(Page::create(db));
+      emplace_back(db);
     }
-
-    return pages;
   }
 
   void print() const {

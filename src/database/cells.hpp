@@ -8,7 +8,6 @@
 
 class Cells : public std::vector<Cell> {
 public:
-  Cells() = default;
   Cells(size_t page_offset, uint16_t count, std::ifstream& db) {
     std::vector<uint16_t> cell_ptrs{};
     cell_ptrs.reserve(static_cast<size_t>(count));
