@@ -5,12 +5,6 @@
 
 #include "database/database.hpp"
 
-void print_tokens(const Tokens &tokens) {
-  for (const auto &t : tokens) {
-    std::cout << t.name << '\n';
-  }
-}
-
 int main(int argc, char *argv[]) {
   constexpr int ARG_COUNT{3};
 
