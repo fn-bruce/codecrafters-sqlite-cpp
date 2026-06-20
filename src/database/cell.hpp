@@ -6,14 +6,9 @@
 
 #include "record.hpp"
 
-struct TableLeafCell {
-  uint64_t payload_size{};
-  uint64_t row_id{};
-};
-
-class Cell {
+class TableLeafCell {
 public:
-  Cell(std::ifstream &db);
+  TableLeafCell(std::ifstream &db);
 
   uint64_t row_id() const { return row_id_; }
   const Record &record() const { return record_; }

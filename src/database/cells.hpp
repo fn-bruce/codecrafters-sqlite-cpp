@@ -5,7 +5,7 @@
 
 #include "cell.hpp"
 
-class Cells : public std::vector<Cell> {
+class Cells : public std::vector<TableLeafCell> {
 public:
   Cells(size_t page_offset, uint16_t count, std::ifstream& db);
 
