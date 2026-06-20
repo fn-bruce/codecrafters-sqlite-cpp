@@ -1,15 +1,20 @@
 #include <iostream>
 
-#include "page.hpp"
+#include "pages.hpp"
 
-Page::Page(std::ifstream& db)
-    : offset_{db.tellg() != 100 ? static_cast<size_t>(db.tellg()) : 0}, header_{PageHeader(db)},
-      cells_{Cells(offset_, header_.num_of_cells(), db)} {}
+Pages::Pages(DatabaseHeader& header, std::ifstream& db) {
+  for (size_t i{}; i < static_cast<size_t>(header.page_count()); ++i) {
+    size_t offset{header.page_size() * i};
+    if (i == 0) {
+      offset += 100;
+    }
+    db.seekg(offset);
+    emplace_back(db);
+  }
+}
 
-void Page::print() const {
-  std::cout << "=== Page ===\n";
-  std::cout << "Offset: " << offset_ << '\n';
-  std::cout << '\n';
-  header_.print();
-  cells_.print();
+void Pages::print() const {
+  for (const auto& p : *this) {
+    p.print();
+  }
 }
