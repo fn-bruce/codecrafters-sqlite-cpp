@@ -36,7 +36,7 @@ private:
   const std::string file_path_;
   std::ifstream db_;
   DatabaseHeader header_;
-  std::vector<TableLeafPage> pages_{};
+  std::vector<Page> pages_{};
   Tables tables_{};
 
   std::ifstream init_db(std::string_view file_path);

@@ -38,6 +38,9 @@ private:
 };
 
 template <typename T>
+concept Cell = std::same_as<T, TableLeafCell> || std::same_as<T, TableInteriorCell>;
+
+template <Cell T>
 std::vector<T> read_cell(size_t page_offset, uint16_t count, std::ifstream &db) {
   std::vector<T> cells{};
   std::vector<uint16_t> cell_ptrs{};

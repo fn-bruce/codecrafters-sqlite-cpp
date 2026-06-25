@@ -2,7 +2,7 @@
 #define INCLUDE_SRC_DATABASE_HEADER_HPP_
 
 #include <cstdint>
-#include <iostream>
+#include <array>
 
 #include "utils.hpp"
 

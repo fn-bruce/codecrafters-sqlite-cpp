@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "database_header.hpp"
 
 DatabaseHeader::DatabaseHeader(std::ifstream& db) : db_{db} {

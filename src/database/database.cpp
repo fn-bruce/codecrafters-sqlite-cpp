@@ -1,13 +1,14 @@
 #include <stdexcept>
 #include <variant>
 
-#include "database.hpp"
 #include "../parser/tokenizer.hpp"
+#include "database.hpp"
 
 Database::Database(std::string_view file_path)
     : file_path_{file_path}, db_{init_db(file_path)},
       header_{DatabaseHeader(db_)},
-      pages_{read_pages(header_, db_)}, tables_{init_tables()} {}
+      pages_{read_pages(header_, db_)},
+      tables_{init_tables()} {}
 
 const std::vector<std::string_view> Database::table_names() const {
   std::vector<std::string_view> table_names{};
@@ -32,7 +33,15 @@ uint16_t Database::table_count() const {
     throw std::runtime_error("page size is 0");
   }
 
-  return pages_.front().cell_count();
+  auto front{pages_.front()};
+
+  if (std::holds_alternative<TableInteriorPage>(front)) {
+    auto page{std::get<TableInteriorPage>(front)};
+    return page.cell_count();
+  }
+
+  auto page{std::get<TableLeafPage>(front)};
+  return page.cell_count();
 }
 
 void Database::execute(std::string_view command) const {
@@ -68,14 +77,19 @@ void Database::execute(std::string_view command) const {
 void Database::print() const {
   header_.print();
   for (const auto &p : pages_) {
-    p.print();
+    if (std::holds_alternative<TableInteriorPage>(p)) {
+      auto page{std::get<TableInteriorPage>(p)};
+      page.print();
+    }
+
+    auto page{std::get<TableLeafPage>(p)};
+    page.print();
   }
 }
 
-void Database::print(
-    std::string_view tbl_name,
-    const std::vector<std::string> &col_names,
-    std::optional<WhereClause> clause) const {
+void Database::print(std::string_view tbl_name,
+                     const std::vector<std::string> &col_names,
+                     std::optional<WhereClause> clause) const {
   tables_.print(tbl_name, col_names, clause);
 }
 
@@ -160,8 +174,8 @@ Tables Database::init_tables() {
 
         const auto &tbl_val{tbl_vals[i]};
 
-        if (std::holds_alternative<std::monostate>(tbl_val) && col.col_name == "id" &&
-            col.primary_key) {
+        if (std::holds_alternative<std::monostate>(tbl_val) &&
+            col.col_name == "id" && col.primary_key) {
           vals.emplace_back(std::to_string(tbl_cell.row_id()));
           continue;
         }
@@ -208,14 +222,15 @@ Tables Database::init_tables() {
 
 const TableLeafPage &Database::schema_page() const {
   assert(!pages_.empty() && "schema page doesn't exist in empty pages");
-  return pages_.front();
+
+  return std::get<TableLeafPage>(pages_.front());
 }
 
 const TableLeafPage &Database::page(size_t root_page) const {
   assert(root_page != 0 && "root_page is never 0");
   size_t idx{root_page - 1};
   assert(idx <= pages_.size() && "idx for page doesn't exist");
-  return pages_[idx];
+  return std::get<TableLeafPage>(pages_[idx]);
 }
 
 std::vector<std::string> Database::get_col_names(std::string tbl_name) const {
@@ -224,7 +239,7 @@ std::vector<std::string> Database::get_col_names(std::string tbl_name) const {
   }
 
   auto first_page{pages_.front()};
-  auto cells{first_page.cells()};
+  auto cells{std::get<TableLeafPage>(first_page).cells()};
 
   return {};
 }
